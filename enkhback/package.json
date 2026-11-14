@@ -1,0 +1,28 @@
+{
+  "name": "enkhback",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ЭнхЭх pregnancy-care API (Node.js, Express, Sequelize, PostgreSQL)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed/demo.js",
+    "seed:reset": "node src/seed/demo.js --force",
+    "db:create": "node src/scripts/create-db.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7"
+  }
+}
