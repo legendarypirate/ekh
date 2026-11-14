@@ -43,12 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    const onLogin = pathname === "/login";
-    if (!user && !onLogin) router.replace("/login");
-    if (user && onLogin) {
+    const publicPath = pathname === "/login" || pathname === "/privacy";
+    if (!user && !publicPath) router.replace("/login");
+    if (user && pathname === "/login") {
       router.replace(user.role === "superadmin" ? "/admin" : "/dashboard");
     }
-    if (user?.role === "superadmin" && pathname && !pathname.startsWith("/admin") && pathname !== "/login") {
+    if (user?.role === "superadmin" && pathname && !pathname.startsWith("/admin") && !publicPath) {
       router.replace("/admin");
     }
     if (user && user.role !== "superadmin" && pathname?.startsWith("/admin")) {

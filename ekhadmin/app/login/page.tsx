@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -57,6 +58,9 @@ export default function LoginPage() {
           <div>Дүүрэг: <code>duureg / Demo@district</code></div>
           <div>Super Admin: <code>superadmin / Demo@Super26!</code></div>
         </div>
+        <p className="login-legal">
+          <Link href="/privacy">Нууцлалын бодлого</Link>
+        </p>
       </div>
     </div>
   );
