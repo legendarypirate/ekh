@@ -58,6 +58,16 @@ export function todayIso() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+export function shiftIso(ymd: string, n: number) {
+  const d = new Date(`${ymd}T12:00:00`);
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function daysBetween(a: string, b: string) {
+  return Math.round((new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime()) / 86400000);
+}
+
 export function refStatus(r: { status?: string; dueDate?: string }) {
   if (r.status === "completed") return "completed";
   if (r.status === "closed") return "closed";

@@ -42,7 +42,7 @@ const Patient = sequelize.define("Patient", {
   gender: { type: DataTypes.ENUM("unknown", "girl", "boy"), allowNull: false, defaultValue: "unknown" },
   height: { type: DataTypes.STRING(16) },
   history: { type: DataTypes.TEXT },
-  blood: { type: DataTypes.STRING(8) },
+  blood: { type: DataTypes.STRING(40) },
   gravida: { type: DataTypes.STRING(8) },
   para: { type: DataTypes.STRING(8) },
   previousOutcomes: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },

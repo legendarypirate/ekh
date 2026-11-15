@@ -83,16 +83,55 @@ router.post(
     const appPhone = String(b.appPhone || "").replace(/\D/g, "");
     const appPassword = String(b.appPassword || "");
     if (!code || !name || !lmp) throw new HttpError(400, "Код, нэр, ССТ огноо заавал.");
-    if (registrationNumber && !/^[А-ЯЁӨҮ]{2}[0-9]{8}$/.test(registrationNumber)) {
+    if (!registrationNumber) throw new HttpError(400, "Регистрийн дугаар заавал.");
+    if (!/^[А-ЯЁӨҮ]{2}[0-9]{8}$/.test(registrationNumber)) {
       throw new HttpError(400, "Регистрийн дугаар 2 кирилл үсэг, 8 цифрээс бүрдэх ёстой.");
     }
     if (!/^\d{8}$/.test(appPhone)) throw new HttpError(400, "Эхийн аппын утас 8 оронтой байх ёстой.");
     if (appPassword.length < 8) throw new HttpError(400, "Нууц үг хамгийн багадаа 8 тэмдэгттэй байна.");
+    if (await Patient.findOne({ where: { code } })) throw new HttpError(409, "Энэ код аль хэдийн бүртгэлтэй байна.");
+    if (await Patient.findOne({ where: { registrationNumber } })) {
+      throw new HttpError(409, "Энэ регистрийн дугаар аль хэдийн бүртгэлтэй байна.");
+    }
+    if (await Patient.findOne({ where: { appPhone } })) {
+      throw new HttpError(409, "Энэ утасны дугаар өөр эхийн аппын эрхэд бүртгэлтэй байна.");
+    }
+
+    const previousOutcomes = Array.isArray(b.previousOutcomes)
+      ? b.previousOutcomes
+      : [].concat(b.previousOutcome || []).filter(Boolean);
+    const employment =
+      b.employment && typeof b.employment === "object"
+        ? b.employment
+        : {
+            status: b.employmentStatus || "",
+            workplace: b.workplace || "",
+            jobTitle: b.jobTitle || "",
+            address: b.workAddress || "",
+            phone: b.workPhone || "",
+          };
+    const grams = String(b.babyWeightGrams || b.careExit?.babyWeightGrams || "").replace(/\D/g, "").slice(0, 4);
+    const exitOutcome = String(b.careExit?.outcome || b.exitOutcome || "");
+    const born = ["term", "preterm"].includes(exitOutcome);
+    const careExit = exitOutcome
+      ? {
+          outcome: exitOutcome,
+          date: b.careExit?.date || b.exitDate || "",
+          babyWeightGrams: born ? grams : "",
+          babyWeight: born && grams ? (Number(grams) / 1000).toFixed(3) : "",
+          babyLength: born ? String(b.careExit?.babyLength || b.babyLength || "") : "",
+          note: String(b.careExit?.note || b.exitNote || "").trim(),
+          recordedBy: req.user.name,
+          recordedAt: new Date().toISOString(),
+        }
+      : b.careExit && typeof b.careExit === "object"
+        ? b.careExit
+        : {};
 
     const patient = await Patient.create({
       code,
       name,
-      registrationNumber: registrationNumber || null,
+      registrationNumber,
       phone: String(b.phone || appPhone),
       appPhone,
       appPasswordHash: await bcrypt.hash(appPassword, 10),
@@ -107,14 +146,14 @@ router.post(
       blood: b.blood || "",
       gravida: b.gravida || "",
       para: b.para || "",
-      previousOutcomes: Array.isArray(b.previousOutcomes) ? b.previousOutcomes : [],
-      employment: b.employment || {},
+      previousOutcomes,
+      employment,
       assessment: b.assessment || "",
       assessmentReason: b.riskNote || b.assessmentReason || "",
       doctor: "Хорооны хяналтын эмч",
       clinicId: req.user.clinicId,
       districtId: req.user.districtId,
-      careExit: b.careExit || {},
+      careExit,
       registeredAt: today(),
     });
 

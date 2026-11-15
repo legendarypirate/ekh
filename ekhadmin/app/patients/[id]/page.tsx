@@ -8,6 +8,63 @@ import { Heading, Tag } from "@/components/Ui";
 import { api, pretty, refStatus, todayIso, type Patient } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
+const OUTCOME_NAMES: Record<string, string> = {
+  term: "Гүйцэд",
+  preterm: "Дутуу",
+  termination: "Үр хөндсөн",
+  miscarriage: "Зулбсан",
+};
+
+const EMPLOYMENT_NAMES: Record<string, string> = {
+  employed: "Ажил эрхэлдэг",
+  self: "Хувиараа хөдөлмөр эрхэлдэг",
+  unemployed: "Ажил эрхэлдэггүй",
+  student: "Суралцдаг",
+  other: "Бусад",
+};
+
+const GENDER_NAMES: Record<string, string> = {
+  unknown: "Тодорхойгүй",
+  girl: "Гүнж",
+  boy: "Ханхүү",
+};
+
+function summaryRows(p: Patient): Array<[string, string]> {
+  const emp = (p.employment || {}) as { status?: string; workplace?: string; jobTitle?: string; address?: string; phone?: string };
+  const exit = (p.careExit || {}) as { outcome?: string; date?: string; note?: string; babyLength?: string; babyWeightGrams?: string };
+  const previous = Array.isArray(p.previousOutcomes)
+    ? (p.previousOutcomes as string[]).map((x) => OUTCOME_NAMES[x] || x).join(", ")
+    : "";
+  return [
+    ["Эхийн нэр", p.name],
+    ["Бүртгэлийн код", p.code],
+    ["Регистрийн дугаар (эмчид)", String(p.registrationNumber || "")],
+    ["Холбоо барих дугаар", String(p.phone || "")],
+    ["Яаралтай холбоо барих утас", String(p.emergencyPhone || "")],
+    ["Төрсөн огноо", p.dob ? pretty(String(p.dob)) : ""],
+    ["Харьяа байгууллага", String(p.clinic || "")],
+    ["Амьдарч буй хаяг", String(p.address || "")],
+    ["Ажлын газрын нэр", emp.workplace || ""],
+    ["Албан тушаал / эрхэлдэг ажил", emp.jobTitle || ""],
+    ["Ажлын газрын хаяг", emp.address || ""],
+    ["Ажлын газрын утас", emp.phone || ""],
+    ["Ажил эрхлэлтийн байдал", EMPLOYMENT_NAMES[emp.status || ""] || ""],
+    ["Хүүхдийн хүйс", GENDER_NAMES[String(p.gender || "unknown")] || ""],
+    ["Өмнөх жирэмслэлтийн үр дүн", previous],
+    ["Хяналтын төлөв", exit.outcome ? OUTCOME_NAMES[exit.outcome] || exit.outcome : "Хяналтад байгаа"],
+    ["Хяналтаас гарсан өдөр", exit.date ? pretty(exit.date) : ""],
+    ["Хяналтаас гарсан тайлбар", exit.note || ""],
+    ["Жирэмсний хугацаа", String(p.gestation?.label || "")],
+    ["Сүүлийн сарын тэмдэг", pretty(p.lmp)],
+    ["Төрөх тооцоо", pretty(String(p.dueDate || p.dueOverride || ""))],
+    ["Өндөр (см)", String(p.height || "")],
+    ["Резус, цусны бүлэг", String(p.blood || "")],
+    ["Өмнөх жирэмслэлт / төрөлт", [p.gravida ? `G${p.gravida}` : "", p.para ? `P${p.para}` : ""].filter(Boolean).join(" / ")],
+    ["Түүх, нэмэлт тэмдэглэл", String(p.history || "")],
+    ["Эрсдэлийн үнэлгээний тайлбар", String(p.assessmentReason || "")],
+  ];
+}
+
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -111,16 +168,10 @@ export default function PatientDetailPage() {
       </div>
       {tab === "summary" ? (
         <div className="card pad">
+          <div className="panel-title"><h2>Ерөнхий мэдээлэл</h2></div>
           <div className="kv">
-            {[
-              ["Эхийн нэр", p.name],
-              ["Бүртгэлийн код", p.code],
-              ["Утас", p.phone],
-              ["Хороо", p.clinic],
-              ["Эмч", p.doctor],
-              ["ССТ", pretty(p.lmp)],
-            ].map(([k, v]) => (
-              <div key={k}><small>{k}</small><strong>{String(v || "—")}</strong></div>
+            {summaryRows(p).map(([k, v]) => (
+              <div key={k}><small>{k}</small><strong>{v || "—"}</strong></div>
             ))}
           </div>
         </div>
