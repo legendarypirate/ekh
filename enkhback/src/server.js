@@ -6,6 +6,13 @@ const { seed } = require("./seed/demo");
 async function boot() {
   await sequelize.authenticate();
   if (env.dbSync) await sequelize.sync();
+  try {
+    await sequelize.query(
+      "ALTER TABLE clinics ADD COLUMN IF NOT EXISTS is_deleted SMALLINT NOT NULL DEFAULT 0"
+    );
+  } catch (err) {
+    console.warn("Could not ensure clinics.is_deleted:", err.message);
+  }
   if (env.seedOnEmpty) {
     const n = await Account.count();
     if (n === 0) await seed();

@@ -1,7 +1,7 @@
 const { Router } = require("express");
 const bcrypt = require("bcryptjs");
 const { Op } = require("sequelize");
-const { Clinic, Account, Patient, AuditLog } = require("../models");
+const { Clinic, Account, Patient, AuditLog, writeAudit } = require("../models");
 const { asyncHandler, HttpError } = require("../utils/http");
 const { authRequired, roles } = require("../middleware/auth");
 const { publicAccount } = require("../utils/serialize");
@@ -12,7 +12,7 @@ router.use(authRequired);
 router.get(
   "/",
   asyncHandler(async (_req, res) => {
-    const clinics = await Clinic.findAll({ order: [["ward", "ASC"]] });
+    const clinics = await Clinic.findAll({ where: { isDeleted: 0 }, order: [["ward", "ASC"]] });
     res.json({ clinics });
   })
 );
@@ -31,20 +31,45 @@ router.post(
       throw new HttpError(400, "Заавал бөглөх талбар дутуу байна.");
     }
     if (password.length < 8) throw new HttpError(400, "Нууц үг 8-аас доошгүй тэмдэгттэй байна.");
-    const exists = await Clinic.findOne({ where: { districtId, ward } });
-    if (exists) throw new HttpError(409, "Энэ дүүргийн хороо аль хэдийн бүртгэлтэй.");
     const id = districtId === "SBD" && ["08", "09", "8", "9"].includes(ward) ? ward.padStart(2, "0") : `${districtId}-${ward}`;
     const name = `${districtName} · ${ward}-р хороо`;
-    const clinic = await Clinic.create({ id, districtId, districtName, ward, name, organization, active: true });
-    const account = await Account.create({
-      username,
-      role: "clinic",
-      name: organization,
-      passwordHash: await bcrypt.hash(password, 10),
-      clinicId: clinic.id,
-      districtId,
-      active: true,
-    });
+    let clinic = await Clinic.findByPk(id);
+    if (clinic && Number(clinic.isDeleted) !== 1) throw new HttpError(409, "Энэ дүүргийн хороо аль хэдийн бүртгэлтэй.");
+    if (clinic) {
+      clinic.districtId = districtId;
+      clinic.districtName = districtName;
+      clinic.ward = ward;
+      clinic.name = name;
+      clinic.organization = organization;
+      clinic.active = true;
+      clinic.isDeleted = 0;
+      await clinic.save();
+    } else {
+      clinic = await Clinic.create({ id, districtId, districtName, ward, name, organization, active: true, isDeleted: 0 });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    let account = await Account.findOne({ where: { clinicId: clinic.id, role: "clinic" } });
+    if (account) {
+      if (account.username !== username) {
+        const taken = await Account.findOne({ where: { username } });
+        if (taken && taken.id !== account.id) throw new HttpError(409, "Энэ нэвтрэх нэр ашиглагдаж байна.");
+        account.username = username;
+      }
+      account.name = organization;
+      account.passwordHash = passwordHash;
+      account.active = true;
+      await account.save();
+    } else {
+      account = await Account.create({
+        username,
+        role: "clinic",
+        name: organization,
+        passwordHash,
+        clinicId: clinic.id,
+        districtId,
+        active: true,
+      });
+    }
     res.status(201).json({ clinic, account: publicAccount(account) });
   })
 );
@@ -53,7 +78,7 @@ router.patch(
   "/:id",
   roles("superadmin"),
   asyncHandler(async (req, res) => {
-    const clinic = await Clinic.findByPk(req.params.id);
+    const clinic = await Clinic.findOne({ where: { id: req.params.id, isDeleted: 0 } });
     if (!clinic) throw new HttpError(404, "Байгууллага олдсонгүй.");
     const organization = req.body.organization != null ? String(req.body.organization).trim() : clinic.organization;
     const districtName = req.body.districtName != null ? String(req.body.districtName).trim() : clinic.districtName;
@@ -67,6 +92,21 @@ router.patch(
   })
 );
 
+router.delete(
+  "/:id",
+  roles("superadmin"),
+  asyncHandler(async (req, res) => {
+    const clinic = await Clinic.findOne({ where: { id: req.params.id, isDeleted: 0 } });
+    if (!clinic) throw new HttpError(404, "Байгууллага олдсонгүй.");
+    clinic.isDeleted = 1;
+    clinic.active = false;
+    await clinic.save();
+    await Account.update({ active: false }, { where: { clinicId: clinic.id, role: "clinic" } });
+    await writeAudit(req.user.name || req.user.username || "Super Admin", `${clinic.name} хороог устгав`, null);
+    res.json({ ok: true });
+  })
+);
+
 router.get(
   "/accounts",
   roles("superadmin"),
@@ -74,7 +114,7 @@ router.get(
     const accounts = await Account.findAll({ order: [["createdAt", "ASC"]] });
     const rows = [];
     for (const a of accounts) {
-      const clinics = a.role === "district" ? await a.getAssignedClinics() : [];
+      const clinics = a.role === "district" ? await a.getAssignedClinics({ where: { isDeleted: 0 } }) : [];
       rows.push(publicAccount(a, clinics.map((c) => c.id)));
     }
     res.json({ accounts: rows });
@@ -101,7 +141,7 @@ router.post(
       districtId,
       active: true,
     });
-    const clinics = await Clinic.findAll({ where: { id: { [Op.in]: clinicIds }, districtId, active: true } });
+    const clinics = await Clinic.findAll({ where: { id: { [Op.in]: clinicIds }, districtId, active: true, isDeleted: 0 } });
     await account.setAssignedClinics(clinics);
     res.status(201).json({ account: publicAccount(account, clinics.map((c) => c.id)) });
   })
@@ -117,7 +157,7 @@ router.patch(
     if (req.body.active != null && account.role !== "superadmin") account.active = Boolean(req.body.active);
     if (Array.isArray(req.body.clinicIds) && account.role === "district") {
       const clinics = await Clinic.findAll({
-        where: { id: { [Op.in]: req.body.clinicIds.map(String) }, districtId: account.districtId, active: true },
+        where: { id: { [Op.in]: req.body.clinicIds.map(String) }, districtId: account.districtId, active: true, isDeleted: 0 },
       });
       await account.setAssignedClinics(clinics);
     }
@@ -126,7 +166,7 @@ router.patch(
       account.passwordHash = await bcrypt.hash(String(req.body.password), 10);
     }
     await account.save();
-    const clinics = account.role === "district" ? await account.getAssignedClinics() : [];
+    const clinics = account.role === "district" ? await account.getAssignedClinics({ where: { isDeleted: 0 } }) : [];
     res.json({ account: publicAccount(account, clinics.map((c) => c.id)) });
   })
 );

@@ -56,12 +56,12 @@ async function loadStaffSession(account) {
   if (!account?.active) return null;
   const clinicIds =
     account.role === "district"
-      ? (await account.getAssignedClinics({ where: { active: true } })).map((c) => c.id)
+      ? (await account.getAssignedClinics({ where: { active: true, isDeleted: 0 } })).map((c) => c.id)
       : [];
   let clinic = null;
   if (account.role === "clinic") {
     clinic = await Clinic.findByPk(account.clinicId);
-    if (!clinic?.active) return null;
+    if (!clinic?.active || Number(clinic.isDeleted) === 1) return null;
   }
   return {
     id: account.id,

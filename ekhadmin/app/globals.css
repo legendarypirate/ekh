@@ -293,3 +293,11 @@ a.primary,a.ghost,a.subtle{text-decoration:none}
   .nav-ico{width:28px;height:28px;flex-basis:28px;border-radius:8px}
   .nav-label{font-size:12px}
 }
+.sa-icon-btn{width:36px;height:36px;display:grid;place-items:center;border:1px solid #e4ebf1;background:#fff;color:#64748b;border-radius:10px;cursor:pointer;padding:0}
+.sa-icon-btn svg{width:20px;height:20px;display:block}
+.sa-icon-btn.danger{border-color:#f4dce0;background:#fff0f1;color:#d64d60}
+.sa-icon-btn.danger:hover{background:#d64d60;color:#fff;border-color:#d64d60}
+.sa-button.danger{background:#d64d60;color:#fff;border-color:#d64d60}
+.sa-button.danger:hover{background:#c04354}
+.sa-button.danger:disabled,.sa-icon-btn:disabled{opacity:.6;cursor:not-allowed}
+.sa-delete-note{margin:0 0 18px;color:#52627b;font-size:13px}

@@ -18,6 +18,7 @@ import {
   Send,
   Smartphone,
   Stethoscope,
+  Trash,
   TriangleExclamationPoint,
   UserRoundPlus,
   UsersRound,
@@ -44,6 +45,7 @@ export const NAV_ICONS = {
   audit: FileChartColumn,
   logout: LogOut,
   brand: HeartPulse,
+  trash: Trash,
 } satisfies Record<string, LucideIcon>;
 
 export const STAT_ICONS = {

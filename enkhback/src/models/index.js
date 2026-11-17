@@ -9,6 +9,7 @@ const Clinic = sequelize.define("Clinic", {
   name: { type: DataTypes.STRING(160), allowNull: false },
   organization: { type: DataTypes.STRING(160), allowNull: false },
   active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+  isDeleted: { type: DataTypes.SMALLINT, allowNull: false, defaultValue: 0 },
 });
 
 const Account = sequelize.define("Account", {

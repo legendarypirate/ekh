@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { MenuIcon, NAV_ICONS } from "@/components/icons";
 import { StaffPage } from "@/components/Shell";
 import { api } from "@/lib/api";
 
@@ -9,6 +10,8 @@ type Clinic = { id: string; name: string; organization: string; ward: string; di
 export default function ClinicsPage() {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [open, setOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Clinic | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -36,6 +39,21 @@ export default function ClinicsPage() {
     await load();
   }
 
+  async function removeClinic() {
+    if (!pendingDelete) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/api/clinics/${pendingDelete.id}`, { method: "DELETE" });
+      setPendingDelete(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Устгаж чадсангүй.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <StaffPage crumb="Хорооны байгууллага">
       <div className="sa-head">
@@ -60,19 +78,50 @@ export default function ClinicsPage() {
               </tr>
             </thead>
             <tbody>
-              {clinics.map((c) => (
+              {clinics.length === 0 ? (
+                <tr><td colSpan={5}>Бүртгэлтэй хороо алга.</td></tr>
+              ) : clinics.map((c) => (
                 <tr key={c.id}>
                   <td><strong>{c.name}</strong><small>{c.id}</small></td>
                   <td>{c.organization}</td>
                   <td>{c.districtName}</td>
                   <td><span className={`sa-status ${c.active ? "on" : "off"}`}>{c.active ? "Идэвхтэй" : "Идэвхгүй"}</span></td>
-                  <td><button className="sa-small" type="button" onClick={() => toggle(c)}>{c.active ? "Идэвхгүй болгох" : "Идэвхжүүлэх"}</button></td>
+                  <td>
+                    <div className="sa-inline">
+                      <button className="sa-small" type="button" onClick={() => toggle(c)}>{c.active ? "Идэвхгүй болгох" : "Идэвхжүүлэх"}</button>
+                      <button className="sa-icon-btn danger" type="button" aria-label="Устгах" title="Устгах" onClick={() => setPendingDelete(c)}>
+                        <MenuIcon icon={NAV_ICONS.trash} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+      {pendingDelete ? (
+        <div className="sa-overlay" onClick={() => !busy && setPendingDelete(null)}>
+          <div className="sa-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="sa-modal-head">
+              <div>
+                <h2>Хороо устгах</h2>
+                <p>{pendingDelete.name} жагсаалтаас хаагдана. Өгөгдөл бүрэн устгахгүй.</p>
+              </div>
+              <button className="sa-x" type="button" onClick={() => setPendingDelete(null)} disabled={busy}>✕</button>
+            </div>
+            <div className="sa-modal-body">
+              <p className="sa-delete-note"><b>{pendingDelete.organization}</b> · {pendingDelete.id}</p>
+              <div className="sa-formfoot">
+                <button className="sa-button" type="button" onClick={() => setPendingDelete(null)} disabled={busy}>Болих</button>
+                <button className="sa-button danger" type="button" onClick={removeClinic} disabled={busy}>
+                  {busy ? "Устгаж байна…" : "Устгах"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {open ? (
         <div className="sa-overlay" onClick={() => setOpen(false)}>
           <div className="sa-modal" onClick={(e) => e.stopPropagation()}>
