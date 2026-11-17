@@ -1,6 +1,8 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { CardIcon } from "@/components/icons";
 import { tagClass, statusLabel } from "@/lib/api";
 
 export function Heading({
@@ -54,4 +56,26 @@ export function Empty({ title, desc }: { title: string; desc?: string }) {
 export function ErrorBox({ message }: { message?: string | null }) {
   if (!message) return null;
   return <div className="loginerr">{message}</div>;
+}
+
+export function StatCard({
+  icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: LucideIcon;
+  value: ReactNode;
+  label: string;
+  tone?: "amber" | "red" | "blue";
+}) {
+  return (
+    <div className={`card stat${tone ? ` ${tone}` : ""}`}>
+      <i>
+        <CardIcon icon={icon} />
+      </i>
+      <strong>{value}</strong>
+      <small>{label}</small>
+    </div>
+  );
 }

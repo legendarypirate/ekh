@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StaffPage } from "@/components/Shell";
-import { Empty, Heading, Tag, Who } from "@/components/Ui";
+import { Empty, Heading, StatCard, Tag, Who } from "@/components/Ui";
+import { FLOW_ICONS, MenuIcon, NAV_ICONS, STAT_ICONS } from "@/components/icons";
 import { api, pretty, refStatus, type Patient } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -35,13 +36,13 @@ export default function DashboardPage() {
         kicker={clinic ? "ХОРООНЫ ЭРҮҮЛ МЭНДИЙН ТӨВ" : "ДҮҮРГИЙН НАРИЙН МЭРГЭЖЛИЙН ХЯНАЛТ"}
         title={clinic ? "Хяналтын самбар" : "Дүүргийн хяналтын самбар"}
         desc={clinic ? "Анхны бүртгэл, илгээх хугацаа, эргэн хяналтыг нэг дороос." : "Хороодоос ирүүлсэн эхчүүдийн үзлэгийг хийж, үр дүнг буцаан дамжуулна."}
-        actions={clinic ? <Link className="primary" href="/patients/new">＋ Шинэ эх бүртгэх</Link> : null}
+        actions={clinic ? <Link className="primary" href="/patients/new"><MenuIcon icon={NAV_ICONS.patients} size={16} /> Шинэ эх бүртгэх</Link> : null}
       />
       {error ? <div className="loginerr">{error}</div> : null}
       {clinic && data?.totals.newQuestions ? (
         <div className="v29-new-notice">
           <span>
-            <b>✉ {data.totals.newQuestions} шинэ асуулт ирсэн</b>
+            <b className="v29-new-notice-title"><MenuIcon icon={NAV_ICONS.questions} size={16} /> {data.totals.newQuestions} шинэ асуулт ирсэн</b>
             <br />
             Хариуцсан хорооны эхчүүд хариу хүлээж байна.
           </span>
@@ -49,26 +50,10 @@ export default function DashboardPage() {
         </div>
       ) : null}
       <div className="statgrid">
-        <div className="card stat">
-          <i>♧</i>
-          <strong>{data?.totals.patients ?? "—"}</strong>
-          <small>{clinic ? "Бүртгэлтэй эх" : "Ирүүлсэн нийт эх"}</small>
-        </div>
-        <div className="card stat amber">
-          <i>⌛</i>
-          <strong>{data?.totals.pendingReferrals ?? "—"}</strong>
-          <small>Дүүргийн үзлэг хүлээж байна</small>
-        </div>
-        <div className="card stat red">
-          <i>!</i>
-          <strong>{data?.totals.overdue ?? "—"}</strong>
-          <small>Хугацаа хэтэрсэн</small>
-        </div>
-        <div className="card stat blue">
-          <i>✓</i>
-          <strong>{data?.totals.completedReferrals ?? "—"}</strong>
-          <small>Дүүрэгт үзүүлсэн</small>
-        </div>
+        <StatCard icon={STAT_ICONS.registered} value={data?.totals.patients ?? "—"} label={clinic ? "Бүртгэлтэй эх" : "Ирүүлсэн нийт эх"} />
+        <StatCard icon={STAT_ICONS.waiting} tone="amber" value={data?.totals.pendingReferrals ?? "—"} label="Дүүргийн үзлэг хүлээж байна" />
+        <StatCard icon={STAT_ICONS.overdue} tone="red" value={data?.totals.overdue ?? "—"} label="Хугацаа хэтэрсэн" />
+        <StatCard icon={STAT_ICONS.completed} tone="blue" value={data?.totals.completedReferrals ?? "—"} label="Дүүрэгт үзүүлсэн" />
       </div>
       <div className="split">
         <section className="card pad">
@@ -110,10 +95,26 @@ export default function DashboardPage() {
         <section className="card pad">
           <div className="panel-title"><h2>Ажлын урсгал</h2></div>
           <div className="list">
-            <div className="listitem"><div><b>1 · Хорооны анхны бүртгэл</b><small>А/B/C ангилал ба дүүрэгт очих хугацаа</small></div><span className="tag blue">Хороо</span></div>
-            <div className="listitem"><div><b>2 · Дүүргийн үзлэг</b><small>Ирсэн эхийн үзлэг, зөвлөгөө бүртгэх</small></div><span className="tag blue">Дүүрэг</span></div>
-            <div className="listitem"><div><b>3 · Баталгаажсан эргэн холбоо</b><small>Хорооны самбарт “Үзүүлсэн” төлөв</small></div><span className="tag done">LOG</span></div>
-            <div className="listitem"><div><b>4 · Эхийн апп</b><small>Хугацааны сануулга, дараагийн тов</small></div><span className="tag done">App</span></div>
+            <div className="listitem">
+              <span className="flow-ico"><MenuIcon icon={FLOW_ICONS.register} /></span>
+              <div><b>Анхны бүртгэл</b><small>А/B/C ангилал ба дүүрэгт очих хугацаа</small></div>
+              <span className="tag blue">Хороо</span>
+            </div>
+            <div className="listitem">
+              <span className="flow-ico"><MenuIcon icon={FLOW_ICONS.visit} /></span>
+              <div><b>Дүүргийн үзлэг</b><small>Ирсэн эхийн үзлэг, зөвлөгөө бүртгэх</small></div>
+              <span className="tag blue">Дүүрэг</span>
+            </div>
+            <div className="listitem">
+              <span className="flow-ico"><MenuIcon icon={FLOW_ICONS.confirm} /></span>
+              <div><b>Баталгаажуулалт</b><small>Хорооны самбарт “Үзүүлсэн” төлөв</small></div>
+              <span className="tag done">LOG</span>
+            </div>
+            <div className="listitem">
+              <span className="flow-ico"><MenuIcon icon={FLOW_ICONS.app} /></span>
+              <div><b>Эхийн апп</b><small>Хугацааны сануулга, дараагийн тов</small></div>
+              <span className="tag done">App</span>
+            </div>
           </div>
         </section>
       </div>

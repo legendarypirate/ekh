@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { CardIcon, NAV_ICONS, STAT_ICONS } from "@/components/icons";
 import { StaffPage } from "@/components/Shell";
 import { api } from "@/lib/api";
+import { CircleCheck } from "lucide-react";
 
 type Clinic = { id: string; name: string; organization: string; ward: string; districtName: string; active: boolean };
 type Account = { id: string; name: string; role: string; username: string; active: boolean };
@@ -46,10 +48,10 @@ export default function SuperAdminHome() {
       </div>
       {error ? <div className="loginerr">{error}</div> : null}
       <div className="sa-metrics">
-        <div className="sa-card sa-metric"><div className="sa-metric-icon">⌂</div><small>Хороо</small><strong>{clinics.length}</strong><p>{clinics.filter((c) => c.active).length} идэвхтэй</p></div>
-        <div className="sa-card sa-metric"><div className="sa-metric-icon blue">♟</div><small>Дүүргийн эмч</small><strong>{doctors.length}</strong><p>Хариуцсан эмч нар</p></div>
-        <div className="sa-card sa-metric"><div className="sa-metric-icon orange">◉</div><small>Эрх</small><strong>{accounts.length}</strong><p>Нийт нэвтрэх эрх</p></div>
-        <div className="sa-card sa-metric"><div className="sa-metric-icon pink">♡</div><small>Эхчүүд</small><strong>{patients}</strong><p>Бүртгэлтэй эх</p></div>
+        <div className="sa-card sa-metric"><div className="sa-metric-icon"><CardIcon icon={NAV_ICONS.clinics} /></div><small>Хороо</small><strong>{clinics.length}</strong><p>{clinics.filter((c) => c.active).length} идэвхтэй</p></div>
+        <div className="sa-card sa-metric"><div className="sa-metric-icon blue"><CardIcon icon={NAV_ICONS.doctors} /></div><small>Дүүргийн эмч</small><strong>{doctors.length}</strong><p>Хариуцсан эмч нар</p></div>
+        <div className="sa-card sa-metric"><div className="sa-metric-icon orange"><CardIcon icon={NAV_ICONS.accounts} /></div><small>Эрх</small><strong>{accounts.length}</strong><p>Нийт нэвтрэх эрх</p></div>
+        <div className="sa-card sa-metric"><div className="sa-metric-icon pink"><CardIcon icon={STAT_ICONS.registered} /></div><small>Эхчүүд</small><strong>{patients}</strong><p>Бүртгэлтэй эх</p></div>
       </div>
       <div className="sa-overview-columns">
         <section className="sa-card sa-pad">
@@ -69,7 +71,7 @@ export default function SuperAdminHome() {
           <div className="sa-sectiontitle"><h2>Сүүлийн үйлдлүүд</h2><Link href="/admin/audit">LOG</Link></div>
           {logs.map((l) => (
             <div className="sa-event" key={l.id}>
-              <div className="sa-event-icon">✓</div>
+              <div className="sa-event-icon"><CardIcon icon={CircleCheck} size={16} /></div>
               <div>
                 <b>{l.action}</b>
                 <small>{l.actor} · {String(l.at || "").slice(0, 16).replace("T", " ")}</small>
